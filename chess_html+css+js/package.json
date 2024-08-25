@@ -1,0 +1,23 @@
+{
+  "name": "penrox",
+  "version": "1.0.0",
+  "description": "a modern iteration on chess",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loreanvictor/penrox.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/loreanvictor/penrox/issues"
+  },
+  "homepage": "https://github.com/loreanvictor/penrox#readme",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

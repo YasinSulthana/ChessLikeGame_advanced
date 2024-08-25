@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess-like Game</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #1e1e1e;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      .game-container {
+        text-align: center;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(5, 60px);
+        grid-template-rows: repeat(5, 60px);
+        gap: 5px;
+        margin-bottom: 20px;
+      }
+      .tile {
+        width: 60px;
+        height: 60px;
+        background-color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        color: white;
+        border: 1px solid #555;
+      }
+      .piece {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+      }
+      .player1 {
+        background-color: #4caf50;
+      }
+      .player2 {
+        background-color: #f44336;
+      }
+      .selected {
+        border: 3px solid yellow;
+      }
+      #move-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      button {
+        padding: 10px;
+        margin: 5px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .move-history {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-container">
+      <h1>Advanced Chess-like Game</h1>
+      <div class="board"></div>
+      <div id="selected-character" style="margin-top: 20px">Selected: None</div>
+      <div id="move-buttons">
+        <button id="move-L" style="display: none" onclick="movePiece('L')">
+          L
+        </button>
+        <button id="move-R" style="display: none" onclick="movePiece('R')">
+          R
+        </button>
+        <button id="move-F" style="display: none" onclick="movePiece('F')">
+          F
+        </button>
+        <button id="move-B" style="display: none" onclick="movePiece('B')">
+          B
+        </button>
+        <button id="move-FL" style="display: none" onclick="movePiece('FL')">
+          FL
+        </button>
+        <button id="move-FR" style="display: none" onclick="movePiece('FR')">
+          FR
+        </button>
+        <button id="move-BL" style="display: none" onclick="movePiece('BL')">
+          BL
+        </button>
+        <button id="move-BR" style="display: none" onclick="movePiece('BR')">
+          BR
+        </button>
+      </div>
+      <div class="move-history" id="move-history">Move History:</div>
+      <button id="end-turn">End Turn</button>
+    </div>
+
+    <script>
+      class Piece {
+        constructor(name, player, type) {
+          this.name = name; // Piece name like A-P1, B-H2
+          this.player = player; // player1 or player2
+          this.type = type; // Pawn, Hero1, Hero2
+          this.breath = type === "Pawn" ? 1 : 2;
+        }
+      }
+
+      const boardSize = 5;
+      const board = document.querySelector(".board");
+      const tiles = [];
+      const pieces = [
+        new Piece("A-P1", "player1", "Pawn"),
+        new Piece("A-P2", "player1", "Pawn"),
+        new Piece("A-H1", "player1", "Hero1"),
+        new Piece("A-H2", "player1", "Hero2"),
+        new Piece("A-P3", "player1", "Pawn"),
+
+        new Piece("B-P1", "player2", "Pawn"),
+        new Piece("B-P2", "player2", "Pawn"),
+        new Piece("B-H1", "player2", "Hero1"),
+        new Piece("B-H2", "player2", "Hero2"),
+        new Piece("B-P3", "player2", "Pawn"),
+      ];
+      const endTurnButton = document.getElementById("end-turn");
+      let selectedPiece = null;
+      let currentPlayer = "player1";
+
+      function createBoard() {
+        for (let i = 0; i < boardSize * boardSize; i++) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          tile.addEventListener("click", () => onTileClick(i));
+          board.appendChild(tile);
+          tiles.push(tile);
+        }
+      }
+
+      function placePieces() {
+        const E = boardSize * boardSize - 1;
+        const positions = [0, 1, 2, 3, 4, E - 4, E - 3, E - 2, E - 1, E];
+        for (let i = 0; i < pieces.length; i++) {
+          const pieceDiv = document.createElement("div");
+          pieceDiv.className = `piece ${pieces[i].player}`;
+          pieceDiv.textContent = pieces[i].name;
+          pieceDiv.addEventListener("click", (event) => {
+            event.stopPropagation();
+            selectPiece(i);
+          });
+          tiles[positions[i]].appendChild(pieceDiv);
+          pieces[i].div = pieceDiv;
+        }
+      }
+
+      function selectPiece(index) {
+        if (pieces[index].player !== currentPlayer) {
+          return;
+        }
+
+        if (selectedPiece !== null) {
+          pieces[selectedPiece].div.classList.remove("selected");
+        }
+
+        if (selectedPiece === index) {
+          selectedPiece = null;
+        } else {
+          selectedPiece = index;
+          pieces[selectedPiece].div.classList.add("selected");
+          document.getElementById(
+            "selected-character"
+          ).innerText = `Selected: ${pieces[selectedPiece].name}`;
+          showMoveOptions(pieces[selectedPiece].type);
+        }
+      }
+
+      function showMoveOptions(type) {
+        // Hide all buttons first
+        document
+          .querySelectorAll("#move-buttons button")
+          .forEach((btn) => (btn.style.display = "none"));
+
+        // Show relevant buttons based on the type of the piece
+        if (type === "Pawn" || type === "Hero1") {
+          document.getElementById("move-L").style.display = "inline-block";
+          document.getElementById("move-R").style.display = "inline-block";
+          document.getElementById("move-F").style.display = "inline-block";
+          document.getElementById("move-B").style.display = "inline-block";
+        }
+        if (type === "Hero2") {
+          document.getElementById("move-FL").style.display = "inline-block";
+          document.getElementById("move-FR").style.display = "inline-block";
+          document.getElementById("move-BL").style.display = "inline-block";
+          document.getElementById("move-BR").style.display = "inline-block";
+        }
+      }
+
+      function movePiece(direction) {
+        const selectedTile = tiles.find((tile) =>
+          tile.contains(pieces[selectedPiece].div)
+        );
+        const selectedPos = Array.from(board.children).indexOf(selectedTile);
+        let targetPos = selectedPos;
+
+        // Adjust directions based on the current player perspective
+        if (currentPlayer === "player1") {
+          // For player 1 (top of the board)
+          switch (direction) {
+            case "L":
+              targetPos -= 1;
+              break;
+            case "R":
+              targetPos += 1;
+              break;
+            case "F":
+              targetPos += boardSize;
+              break; // Forward is downwards for player1
+            case "B":
+              targetPos -= boardSize;
+              break; // Backward is upwards for player1
+            case "FL":
+              targetPos += boardSize - 1;
+              break;
+            case "FR":
+              targetPos += boardSize + 1;
+              break;
+            case "BL":
+              targetPos -= boardSize - 1;
+              break;
+            case "BR":
+              targetPos -= boardSize + 1;
+              break;
+          }
+        } else {
+          // For player 2 (bottom of the board)
+          switch (direction) {
+            case "L":
+              targetPos -= 1;
+              break;
+            case "R":
+              targetPos += 1;
+              break;
+            case "F":
+              targetPos -= boardSize;
+              break; // Forward is upwards for player2
+            case "B":
+              targetPos += boardSize;
+              break; // Backward is downwards for player2
+            case "FL":
+              targetPos -= boardSize + 1;
+              break;
+            case "FR":
+              targetPos -= boardSize - 1;
+              break;
+            case "BL":
+              targetPos += boardSize - 1;
+              break;
+            case "BR":
+              targetPos += boardSize + 1;
+              break;
+          }
+        }
+
+        // Eliminate any opponent pieces in the target position (for diagonal kills like Hero2)
+        if (targetPos >= 0 && targetPos < boardSize * boardSize) {
+          const targetTile = tiles[targetPos];
+          if (targetTile.childNodes.length > 0) {
+            const targetPiece = pieces.find(
+              (piece) => piece.div === targetTile.firstChild
+            );
+            if (targetPiece && targetPiece.player !== currentPlayer) {
+              targetPiece.div.remove();
+              pieces.splice(pieces.indexOf(targetPiece), 1); // Remove from pieces array
+              document.getElementById(
+                "move-history"
+              ).innerText += `${pieces[selectedPiece].name}: ${direction} (Captured ${targetPiece.name})\n`;
+            } else {
+              document.getElementById(
+                "move-history"
+              ).innerText += `${pieces[selectedPiece].name}: ${direction}\n`;
+            }
+          }
+
+          // Move the piece if the target tile is empty
+          if (targetTile.childNodes.length === 0) {
+            targetTile.appendChild(pieces[selectedPiece].div);
+          }
+          switchPlayer();
+        }
+      }
+
+      function onTileClick(index) {
+        if (selectedPiece !== null) {
+          movePiece(index);
+        }
+      }
+
+      function switchPlayer() {
+        currentPlayer = currentPlayer === "player1" ? "player2" : "player1";
+        if (selectedPiece !== null) {
+          pieces[selectedPiece].div.classList.remove("selected");
+          selectedPiece = null;
+        }
+        document.getElementById(
+          "selected-character"
+        ).innerText = `Selected: None`;
+      }
+
+      endTurnButton.addEventListener("click", switchPlayer);
+
+      createBoard();
+      placePieces();
+    </script>
+  </body>
+</html>
